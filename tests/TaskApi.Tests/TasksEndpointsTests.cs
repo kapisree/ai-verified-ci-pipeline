@@ -61,4 +61,36 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task PutTaskById_Returns200WithUpdatedTask_WhenTaskExistsAndTitleValid()
+    {
+        var created = await (await _client.PostAsJsonAsync("/tasks", new TaskRequest { Title = "Buy milk" }))
+            .Content.ReadFromJsonAsync<TaskItem>();
+
+        var response = await _client.PutAsJsonAsync($"/tasks/{created!.Id}", new TaskRequest { Title = "Buy oat milk", Description = "1L" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<TaskItem>();
+        Assert.Equal("Buy oat milk", body!.Title);
+    }
+
+    [Fact]
+    public async Task PutTaskById_Returns404_WhenTaskDoesNotExist()
+    {
+        var response = await _client.PutAsJsonAsync($"/tasks/{Guid.NewGuid()}", new TaskRequest { Title = "Anything" });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PutTaskById_Returns400_WhenTitleInvalid()
+    {
+        var created = await (await _client.PostAsJsonAsync("/tasks", new TaskRequest { Title = "Buy milk" }))
+            .Content.ReadFromJsonAsync<TaskItem>();
+
+        var response = await _client.PutAsJsonAsync($"/tasks/{created!.Id}", new TaskRequest { Title = "" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

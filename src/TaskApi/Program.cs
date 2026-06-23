@@ -28,6 +28,18 @@ app.MapGet("/tasks/{id:guid}", (Guid id, TaskStore store) =>
     return task is null ? Results.NotFound() : Results.Ok(task);
 });
 
+app.MapPut("/tasks/{id:guid}", (Guid id, TaskRequest request, TaskStore store) =>
+{
+    var error = TaskValidator.ValidateTitle(request.Title);
+    if (error is not null)
+    {
+        return Results.BadRequest(new { error });
+    }
+
+    var task = store.Update(id, request.Title.Trim(), request.Description);
+    return task is null ? Results.NotFound() : Results.Ok(task);
+});
+
 app.Run();
 
 public partial class Program { }
