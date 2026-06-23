@@ -1,4 +1,4 @@
-namespace TaskApi.Validation;
+﻿namespace TaskApi.Validation;
 
 public static class TaskValidator
 {

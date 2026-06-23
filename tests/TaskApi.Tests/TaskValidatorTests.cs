@@ -1,4 +1,4 @@
-using TaskApi.Validation;
+﻿using TaskApi.Validation;
 using Xunit;
 
 namespace TaskApi.Tests;
