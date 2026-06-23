@@ -40,6 +40,18 @@ app.MapPut("/tasks/{id:guid}", (Guid id, TaskRequest request, TaskStore store) =
     return task is null ? Results.NotFound() : Results.Ok(task);
 });
 
+app.MapPost("/tasks/{id:guid}/complete", (Guid id, TaskStore store) =>
+{
+    var task = store.Complete(id);
+    return task is null ? Results.NotFound() : Results.Ok(task);
+});
+
+app.MapDelete("/tasks/{id:guid}", (Guid id, TaskStore store) =>
+{
+    var deleted = store.Delete(id);
+    return deleted ? Results.NoContent() : Results.NotFound();
+});
+
 app.Run();
 
 public partial class Program { }

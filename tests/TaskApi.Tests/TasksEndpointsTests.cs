@@ -93,4 +93,56 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task PostComplete_Returns200_WhenTaskExists()
+    {
+        var created = await (await _client.PostAsJsonAsync("/tasks", new TaskRequest { Title = "Buy milk" }))
+            .Content.ReadFromJsonAsync<TaskItem>();
+
+        var response = await _client.PostAsync($"/tasks/{created!.Id}/complete", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<TaskItem>();
+        Assert.True(body!.IsComplete);
+    }
+
+    [Fact]
+    public async Task PostComplete_IsIdempotent_WhenCalledTwice()
+    {
+        var created = await (await _client.PostAsJsonAsync("/tasks", new TaskRequest { Title = "Buy milk" }))
+            .Content.ReadFromJsonAsync<TaskItem>();
+
+        await _client.PostAsync($"/tasks/{created!.Id}/complete", content: null);
+        var second = await _client.PostAsync($"/tasks/{created.Id}/complete", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, second.StatusCode);
+    }
+
+    [Fact]
+    public async Task PostComplete_Returns404_WhenTaskDoesNotExist()
+    {
+        var response = await _client.PostAsync($"/tasks/{Guid.NewGuid()}/complete", content: null);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteTaskById_Returns204_WhenTaskExists()
+    {
+        var created = await (await _client.PostAsJsonAsync("/tasks", new TaskRequest { Title = "Buy milk" }))
+            .Content.ReadFromJsonAsync<TaskItem>();
+
+        var response = await _client.DeleteAsync($"/tasks/{created!.Id}");
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteTaskById_Returns404_WhenTaskDoesNotExist()
+    {
+        var response = await _client.DeleteAsync($"/tasks/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
 }
