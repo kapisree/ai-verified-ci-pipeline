@@ -34,3 +34,34 @@ jobs:
           scan-ref: .
           severity: HIGH,CRITICAL
           exit-code: "1"
+
+  claude-spec-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: spec-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Follow the review instructions in .github/claude-review-prompt.md
+            at the root of this checked-out repository.
+
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            BASE SHA: ${{ github.event.pull_request.base.sha }}
+            HEAD SHA: ${{ github.event.pull_request.head.sha }}
+          claude_args: |
+            --allowedTools "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(git diff:*)"
+            --json-schema '{"type":"object","properties":{"compliant":{"type":"boolean","description":"true if the PR diff complies with SPEC.md, false if any violation was found"},"violations":{"type":"array","items":{"type":"string"},"description":"Each spec violation found, quoting the SPEC.md clause it breaks; empty if compliant"}},"required":["compliant","violations"]}'
+      - name: Fail if spec violations were found
+        if: fromJSON(steps.spec-review.outputs.structured_output).compliant == false
+        run: |
+          echo "Spec violations found:"
+          echo '${{ steps.spec-review.outputs.structured_output }}' | jq -r '.violations[]'
+          exit 1
