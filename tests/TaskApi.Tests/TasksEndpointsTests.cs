@@ -145,4 +145,15 @@ public class TasksEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task UnhandledException_Returns500WithoutStackTrace()
+    {
+        var response = await _client.GetAsync("/__boom");
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("at TaskApi.", body);
+        Assert.DoesNotContain("System.Exception", body);
+    }
 }

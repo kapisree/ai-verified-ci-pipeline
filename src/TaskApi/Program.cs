@@ -6,7 +6,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<TaskStore>();
 var app = builder.Build();
 
+app.UseExceptionHandler(exceptionApp =>
+{
+    exceptionApp.Run(async context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsJsonAsync(new { error = "An unexpected error occurred." });
+    });
+});
+
 app.MapGet("/", () => "TaskApi running");
+
+app.MapGet("/__boom", () => { throw new InvalidOperationException("boom"); });
 
 app.MapPost("/tasks", (TaskRequest request, TaskStore store) =>
 {
