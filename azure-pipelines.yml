@@ -1,0 +1,44 @@
+trigger: none
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  DOTNET_VERSION: "8.0.x"
+
+stages:
+  - stage: Test
+    jobs:
+      - job: Test
+        steps:
+          - task: UseDotNet@2
+            inputs:
+              version: $(DOTNET_VERSION)
+          - script: dotnet test TaskApi.sln
+            displayName: dotnet test
+
+  - stage: Lint
+    jobs:
+      - job: Lint
+        steps:
+          - task: UseDotNet@2
+            inputs:
+              version: $(DOTNET_VERSION)
+          - script: dotnet format TaskApi.sln --verify-no-changes
+            displayName: dotnet format --verify-no-changes
+          - script: dotnet build TaskApi.sln --warnaserror
+            displayName: dotnet build --warnaserror
+
+  - stage: Security
+    jobs:
+      - job: Security
+        steps:
+          - script: |
+              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.24.0
+              trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+            displayName: Trivy filesystem scan
